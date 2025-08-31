@@ -91,7 +91,7 @@ The slash commands should now be available in your Discord server. Type `/` to s
 
 ```
 vocairot/
-├── bot.js              # Main bot file
+├── index.js            # Main bot file
 ├── package.json        # Project dependencies
 ├── .env                # Environment variables (create from .env.example)
 ├── .env.example        # Environment variables template
