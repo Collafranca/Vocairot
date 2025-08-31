@@ -112,10 +112,73 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
+// Server info endpoint
+app.get('/', (req, res) => {
+    const serverUrl = `${req.protocol}://${req.get('host')}`;
+    const webhookUrl = `${serverUrl}/webhook/nowpayments`;
+    
+    res.send(`
+        <html>
+        <head><title>Vocairot Bot Server</title></head>
+        <body style="font-family: Arial, sans-serif; margin: 40px;">
+            <h1>🤖 Vocairot Bot Server</h1>
+            <h2>🌐 Server Information</h2>
+            <p><strong>Server URL:</strong> <code>${serverUrl}</code></p>
+            <p><strong>Webhook URL:</strong> <code>${webhookUrl}</code></p>
+            
+            <h2>🔧 NOWPayments Setup</h2>
+            <ol>
+                <li>Copy this webhook URL: <code>${webhookUrl}</code></li>
+                <li>Go to <a href="https://account.nowpayments.io/" target="_blank">NOWPayments Dashboard</a></li>
+                <li>Navigate to Settings > API</li>
+                <li>Paste the webhook URL in "IPN Callback URL"</li>
+                <li>Set Webhook Secret to: <code>my_super_secret_webhook_key_123</code></li>
+            </ol>
+            
+            <h2>✅ Status</h2>
+            <p>Bot is running and ready to accept payments!</p>
+        </body>
+        </html>
+    `);
+});
+
 // Start webhook server
 const WEBHOOK_PORT = process.env.WEBHOOK_PORT || 3000;
-app.listen(WEBHOOK_PORT, () => {
+const server = app.listen(WEBHOOK_PORT, () => {
     console.log(`Webhook server running on port ${WEBHOOK_PORT}`);
+    
+    // Auto-detect and display the webhook URL
+    const os = require('os');
+    const networkInterfaces = os.networkInterfaces();
+    
+    console.log('\n🌐 WEBHOOK URLs (use one of these in NOWPayments):');
+    
+    // Check if we have a custom domain in env
+    if (process.env.WEBHOOK_URL && !process.env.WEBHOOK_URL.includes('YOUR_PELLA_DOMAIN')) {
+        console.log(`✅ Configured: ${process.env.WEBHOOK_URL}`);
+    } else {
+        console.log('⚠️  No domain configured in .env file');
+        
+        // Show possible URLs
+        Object.keys(networkInterfaces).forEach(interfaceName => {
+            const networkInterface = networkInterfaces[interfaceName];
+            networkInterface.forEach(details => {
+                if (details.family === 'IPv4' && !details.internal) {
+                    console.log(`🔗 Option: https://${details.address}:${WEBHOOK_PORT}/webhook/nowpayments`);
+                }
+            });
+        });
+        
+        // Also show localhost option
+        console.log(`🔗 Local: http://localhost:${WEBHOOK_PORT}/webhook/nowpayments`);
+    }
+    
+    console.log('\n📋 TO CONFIGURE NOWPAYMENTS:');
+    console.log('1. Copy one of the URLs above');
+    console.log('2. Go to https://account.nowpayments.io/');
+    console.log('3. Settings > API > IPN Callback URL');
+    console.log('4. Paste the URL and save');
+    console.log('5. Set Webhook Secret to: my_super_secret_webhook_key_123\n');
 });
 
 // Load user data
